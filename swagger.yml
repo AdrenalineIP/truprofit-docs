@@ -73,7 +73,6 @@ paths:
           name: x-api-key
           schema:
             type: string
-            format: uuid
           example: abcde-abcde-abcde  
           required: true
       responses:
@@ -106,7 +105,6 @@ paths:
           name: x-session-token
           schema:
             type: string
-            format: uuid
           example: abcde-abcde-abcde  
           required: true
       requestBody:
@@ -145,7 +143,6 @@ paths:
           name: x-session-token
           schema:
             type: string
-            format: uuid
           example: abcde-abcde-abcde  
           required: true
       requestBody:
@@ -184,7 +181,6 @@ paths:
           name: x-api-key
           schema:
             type: string
-            format: uuid
           example: abcde-abcde-abcde  
           required: true
       requestBody:
