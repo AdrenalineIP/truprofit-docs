@@ -1,0 +1,1153 @@
+openapi: 3.0.3
+info:
+  title: Adrenaline TruProfit API
+  description: |-
+    `Introduction`
+  
+    This is the API for the Adrenaline TruProfit API.
+    
+    This allows the user to send odds for adjustment to our APIs, which will respond with adjusted odds where appropriate.
+    
+    Settlement data may also be sent to TruProfit so that users may be analyzed and classified for future adjustment.
+    
+    `TruProfit`
+    
+    TruProfit is a product that allows personalised odds presentation to a player. 
+    
+    It is intended that this can allow a sportsbook to personalise and target players that they wish to retain, boosting engagement, retention and profit for the Sports Book.
+    
+    `TruProfit Retention` 
+    
+    These APIs are intended to allow a sports book to adjust odds for a customer in order to boost retention.
+    
+    There are two models of operation for this:
+    
+    - Financed directly by marketing spend
+    - Self-Financing Retention Adjustments to Odds
+    
+    `TruProfit Parlays`
+    
+    This API allows us to provide potential parlay options to a sports book, which may then display this to their player.
+    
+    It is intended to provide a personalised 'Odds Boost' to a player, boosting retention and increasing player engagement with the Sports Book.
+    
+    `How to Use The API` 
+    
+    In general, it is expected that you use the login call first with a valid API key, and then use the API Session Token for subsequent calls to any other API Interface.
+    
+    This API requires an API key, if you don't have one, please [contact us](https://www.adrenalineip.com/#contact).
+    
+    `Use Of The API`
+    
+    Use of this API is subject to our terms and conditions, see [Terms](https://www.adrenalineip.com/terms)
+    
+    Access and use of this API is granted on the understanding that it will be used in accordance with our terms and conditions.  
+    
+    Sharing of this API with other third parties is strictly prohibited without the express approval of Adrenaline in writing.
+    
+    NOTE: If you wish to explore other integration options, please [contact us](https://www.adrenalineip.com/#contact)
+
+    _If you have any questions, please contact us via [our website](https://www.adrenalineip.com/#contact)_
+    
+    `Useful Links`
+    
+    - [Adrenaline](https://www.adrenalineip.com)
+    - [TruProfit](http://truprofit.io/)
+  termsOfService: https://adrenalineip.com/terms/
+  contact:
+    email: luke.campbell@adrenalineip.com
+  license:
+    name: Proprietary
+    url: https://adrenalineip.com/licenses/license-1.0.html
+  version: 2.0.1-alpha
+externalDocs:
+  description: Find out more about TruProfit
+  url: http://adrenalineip.com
+servers:
+  - url: https://dev.truprofit.io/api/truprofit/personalization/v2
+tags:
+  - name: TruProfit Authentication
+    description: Use this call to authenticate to the API
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/authentication
+  - name: TruProfit Full Product
+    description: Unifying the TruProfit Retention and Adjustment products together, so they can be easily integrated into your sportsbook.
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/settlement    
+  - name: TruProfit Adjustment
+    description: Offer select customers personalized odds to increase profit
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/adjustment
+  - name: TruProfit Retentions
+    description: To retain and engage customers, use this API to offer select customer improved, personalized odds.
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/retention
+  - name: TruProfit Parlays
+    description: Improve Sports Book Profit with suggested parlays based on previous bets.
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/double-down
+  - name: TruProfit Bet Placement
+    description: Calling the api to advise TruProfit of a placed bet
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/settlement    
+  - name: TruProfit Bet Settlement
+    description: Calling the adjustment api with a settlement
+    externalDocs:
+      description: Find out more
+      url: http://adrenalineip.com/products/truprofit/settlement    
+paths:
+  /login:
+    post:
+      tags:
+        - 'TruProfit Authentication'
+      security: []
+      summary: Obtain an API Access Token via login
+      operationId: login
+      parameters:
+        - in: header
+          name: x-api-key
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      responses:
+        '200':
+          description: The token result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Invalid credentials
+        '422':
+          description: 'Malformed request: fields are missing or are supplied in an invalid format'
+          content:
+            application/json:
+              example:
+                message: The given data was invalid.
+                errors:
+                  x-api-key:
+                    - "The x-api-key field is required."
+  /parlay:
+    post:
+      tags:
+        - TruProfit Parlays
+      summary: Sending a parlay to TruProfit, it will respond with a suitable parlay for the user
+      description: The operator sends us a parlay - we process and return with a suggested parlay. NOTE - please take note of the prebetId, as this will be needed when notifying truprofit
+      operationId: singleOddsParlay
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a single set of odds and applies an adjustment if appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParlayLineList'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParlayOutput'          
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds  
+  /adjustment:
+    post:
+      tags:
+        - TruProfit Adjustment
+      summary: Send an odds for adjustment to TruProfit
+      description: This is for a single set of odds to be supplied to the user.
+      operationId: singleOddsAdjust
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a single set of odds and applies an adjustment if appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequestSimple'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdjustmentSingleOutput'          
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds
+  /adjustments:
+    post:
+      tags:
+        - TruProfit Adjustment
+      summary: Batch odds adjustment interface for TruProfit
+      description: Multiple odds can be provided.
+      operationId: batchOddsAdjust
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a number of different odds for one user and applies adjustments where appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequestBatch'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdjustmentBatchOutput'
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds
+  /retentions/marketing:
+    post:
+      tags:
+        - TruProfit Retentions
+      summary: Batch odds retention interface for TruProfit based on marketing spend, so only one side is adjusted
+      description: Multiple odds can be provided.
+      operationId: batchOddsRetention
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a number of different odds for one user and applies adjustments where appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequestBatch'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdjustmentBatchOutput'
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds 
+  /retentions/standard/:
+    post:
+      tags:
+        - TruProfit Retentions
+      summary: Batch odds retention and adjustment interface for TruProfit that is self-financing
+      description: Multiple odds can be provided.
+      operationId: batchOddsRetentionBothSides
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a number of different odds for one user and applies adjustments where appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequestBatch'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdjustmentBatchOutput'
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds
+  /truprofit/full-product:
+    post:
+      tags:
+        - TruProfit Full Product
+      summary: Call to tell the SportsBook if a user is to be offered retention odds or adjusted odds
+      description: Multiple odds can be provided.
+      operationId: RetentionAndAdjustment
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: This is a call that takes a number of different odds for one user and applies adjustments where appropriate.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequestBatch'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdjustmentBatchOutput'
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds          
+  /settlement/bet:
+    post:
+      tags:
+        - TruProfit Bet Settlement
+      summary: Send a notification of a settlement of an overall bet to TruProfit
+      description: This call allows the outcome of a settlement of a full bet to be sent to truprofit - this would be the total stake and total win and status communicated to TruProfit.
+      operationId: settlementBetCall
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementBetRequestSimple'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Acknowledgement'          
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds
+  /settlement/record:
+    post:
+      tags:
+        - TruProfit Bet Settlement
+      summary: Send a notification of a settlement event to TruProfit
+      description: This call allows the outcome of a settlement of a bet line to be sent to truprofit so we can see the outcome of it.
+      operationId: settlementCall
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementRequestSimple'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Acknowledgement'          
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds              
+  /place/bet:
+    post:
+      tags:
+        - TruProfit Bet Placement
+      summary: Send a notification of a placed bet event to TruProfit
+      description: This call allows the outcome of a settlement of a bet line to be sent to truprofit so we can see the outcome of it.
+      operationId: betPlacementCall
+      parameters:
+        - in: header
+          name: x-session-token
+          schema:
+            type: string
+          example: abcde-abcde-abcde  
+          required: true
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BetPlacementRequestSimple'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Acknowledgement'          
+        '401':
+          description: Invalid token
+        '403':
+          description: Expired token credentials - please call login again   
+      security:
+        - adr_auth:
+            - write:odds
+            - read:odds              
+
+components:
+  schemas:
+    Token:
+      type: object
+      properties:
+        sessionKey:
+          type: string
+          description: The session token
+          example: eyJhb1cioiJIVCJ9.eyAixjMdNTY31D1wIioNSiW0jxTyT5TyCjIxOTI3MjJ9.kOkTVr4rPq5wiv2W1bB1UQ
+    AdjustmentSingleOutput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          example: abcd-abcd
+        prebetId:
+          type: string
+          example: abcd-abcd
+        userId:
+          type: string
+          example: "abcde-abcde-abcde"
+        odds:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdjustedOddPart'
+    AdjustmentBatchOutput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          example: abcd-abcd
+        prebetId:
+          type: string
+          example: abcd-abcd
+        userId:
+          type: string
+          example: "abcde-abcde-abcde"
+        eventOddsToAdjust:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdjustmentResponseBatchSimple'          
+    AdjustedOddPart:
+      type: object
+      properties:
+        label:
+          type: string
+          example: 1
+        odds:
+          type: string
+          example: 1.87
+        probability:
+          type: number
+          example: 10.23
+        newOdd:
+          type: string
+          example: 1.92
+        newProbability:
+          type: number
+          example: 10.27
+    AdjustmentRequestBatch:
+      type: object
+      properties: 
+        userId:
+          type: string
+          example: "abcde-abcde"
+        userLocation:
+          type: string
+          example: "London, UK"
+        prebetId:
+          type: string
+          example: "abcde-abcde-abcde"
+        eventOddsToAdjust:
+            type: array
+            items:
+              $ref: '#/components/schemas/AdjustmentRequestBatchSimple'  
+    AdjustmentRequestBatchSimple:
+      type: object
+      properties:
+        startTime:
+          type: string
+          example: "1671511820"
+        sport:
+          type: string
+          example: "Soccer"
+        league:
+          type: string
+          example: "English Premiership"
+        market:
+          type: string
+          example: "1x2"
+        eventPart:
+          type: string
+          example: "Whole Match"
+        betType:
+          type: string
+          example: "Single"
+        currency:
+          type: string
+          example: "USD" 
+        isPrematch:
+          type: string
+          example: "Pre-match"
+        oddsType:
+          type: string
+          example: "Decimal, US" 
+        odds:
+            type: array
+            items:
+              $ref: '#/components/schemas/OddsPair' 
+        event:
+          type: string
+          example: "Man Utd vs. Chelsea"
+        selection:
+          type: string
+          example: "1x2:1"
+    AdjustmentResponseBatchSimple:
+      type: object
+      properties:
+        startTime:
+          type: string
+          example: "1671511820"
+        sport:
+          type: string
+          example: "Soccer"
+        league:
+          type: string
+          example: "English Premiership"
+        market:
+          type: string
+          example: "1x2"
+        eventPart:
+          type: string
+          example: "Whole Match"
+        betType:
+          type: string
+          example: "Single"
+        currency:
+          type: string
+          example: "USD" 
+        isPrematch:
+          type: string
+          example: "Pre-match"
+        oddsType:
+          type: string
+          example: "Decimal, US" 
+        odds:
+            type: array
+            items:
+              $ref: '#/components/schemas/AdjustedOddPart' 
+        event:
+          type: string
+          example: "Man Utd vs. Chelsea"
+        selection:
+          type: string
+          example: "1x2:1"      
+    AdjustmentRequestSimple:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "abcde-abcde-abcde"
+        prebetId:
+          type: string
+          example: "abcde-abcde-abcde"
+        startTime:
+          type: string
+          example: "1671511820"
+        sport:
+          type: string
+          example: "Soccer"
+        league:
+          type: string
+          example: "English Premiership"
+        market:
+          type: string
+          example: "1x2"
+        eventPart:
+          type: string
+          example: "Whole Match"
+        betType:
+          type: string
+          example: "Single"
+        currency:
+          type: string
+          example: "USD" 
+        isPrematch:
+          type: string
+          example: "Pre-match"
+        oddsType:
+          type: string
+          example: "Single" 
+        odds:
+            type: object
+            items:
+              $ref: '#/components/schemas/ParlayRequestSimple'  
+        event:
+          type: string
+          example: "Man Utd vs. Chelsea"
+        selection:
+          type: string
+          example: "1x2:1"
+        userLocation:
+          type: string
+          example: "Chicago, IL"
+    ParlayRequestSimple:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "abcde-abcde-abcde"
+        existingBetId:
+          type: string
+          example: "abcde-abcde-abcde"  
+        prebetId:
+          type: string
+          example: "abcde-abcde-abcde"
+        odds:
+            type: object
+            items:
+              $ref: '#/components/schemas/OddsPair'
+    ParlayOddSimple:
+      type: object
+      properties:
+        legId:
+          type: number
+          example: 1
+        legStatus:
+          type: string
+          example: "Won|Lost|Void|Running|Cancelled"
+        startTime:
+          type: string
+          example: "1671511820"
+        sport:
+          type: string
+          example: "Soccer"
+        sportId:
+          type: string
+          example: "1234"
+        league:
+          type: string
+          example: "English Premiership"
+        leagueId:
+          type: string
+          example: "1234"  
+        market:
+          type: string
+          example: "1x2"
+        eventPart:
+          type: string
+          example: "Whole Match"
+        betType:
+          type: string
+          example: "Single"
+        currency:
+          type: string
+          example: "USD" 
+        isPrematch:
+          type: string
+          example: "Pre-match"
+        oddsType:
+          type: string
+          example: "Single" 
+        event:
+          type: string
+          example: "Man Utd vs. Chelsea"
+        eventId:
+          type: string
+          example: "1234"  
+        selection:
+          type: string
+          example: "1x2:1"
+        userLocation:
+          type: string
+          example: "Chicago, IL"
+        theOdds:
+            type: array
+            items:
+              $ref: '#/components/schemas/OddsPairWithUpdate'  
+    ParlayLineList:
+      type: object
+      properties:
+        betStatus:
+          type: string
+          example: "Won|Lost|Void|Running|Cancelled"
+        betId:
+          type: string
+          example: "123456789"
+        userId:
+          type: string
+          example: "abcde-abcde-abcde"   
+        betLines:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParlayOddSimple'
+    ParlayOutput:
+      type: object
+      properties: 
+        legId:
+          type: number
+          example: 1
+        betId:
+          type: string
+          example: "acde-acde-acde-acde"   
+        prebetId:
+          type: string
+          example: "acde-acde-acde-acde"    
+        startTime:
+          type: string
+          example: "1671511820"
+        offerExpiresTime:
+          type: string
+          example: "1671511820"  
+        sport:
+          type: string
+          example: "Soccer"
+        league:
+          type: string
+          example: "English Premiership"
+        market:
+          type: string
+          example: "1x2"
+        eventPart:
+          type: string
+          example: "Whole Match"
+        betType:
+          type: string
+          example: "Single"
+        currency:
+          type: string
+          example: "USD" 
+        isPrematch:
+          type: string
+          example: "Pre-match"
+        oddsType:
+          type: string
+          example: "Single" 
+        theOdds:
+            type: array
+            items:
+              $ref: '#/components/schemas/AdjustedOddPart'
+        event:
+          type: string
+          example: "Man Utd vs. Chelsea"
+        selection:
+          type: string
+          example: "1x2:1"
+        userLocation:
+          type: string
+          example: "Chicago, IL"
+    OddsPair:
+      type: object
+      properties:
+        oddsLabel:
+          type: string
+          example: "1" 
+        odds:
+          type: number
+          example: 2.50
+    OddsPairWithUpdate:
+      type: object
+      properties:
+        oddsLabel:
+          type: string
+          example: "1" 
+        originalOdds:
+          type: number
+          example: 2.50 
+        currentOdds:
+          type: number
+          example: 2.25
+    SettlementBetRequestSimple:
+      type: object
+      properties:
+        betId:
+          type: string
+          example: "abcde-abcde"
+        prebetId: 
+            type: string
+            example: "1234-abc-def"
+        userId: 
+            type: string
+            example: "1234-abc-def"  
+        isPrematch:
+            type: string
+            example: "Pre-Match"
+        currency:
+            type: string
+            example: "USD"
+        stake:
+            type: number
+            example: 123.34
+        bonus: 
+            type: number
+            example: 0.00
+        oddsType: 
+            type: string
+            example: "Decimal, US"
+        odds:
+            type: number
+            example: 1.34
+        oddsAdjusted:
+            type: boolean
+            example: true   
+        potentialWin:
+            type: number
+            example: 100.23
+        risk:
+            type: number
+            example: 100.23
+        payout:
+            type: number
+            example: 100.23
+        balance: 
+            type: number
+            example: 100000.45
+        status: 
+            type: string
+            example: "Won|Lost|Void|Cancelled"
+        settleTime:
+            type: string
+            example: "1671511820"
+    SettlementRequestSimple:
+      type: object
+      properties:
+        betId:
+          type: string
+          example: "abcde-abcde"
+        prebetId: 
+            type: string
+            example: "1234-abc-def"
+        legId: 
+            type: integer
+            format: int64
+            example: 1
+        userId: 
+            type: string
+            example: "1234-abc-def"  
+        betTime: 
+            type: string
+            example: "1234567898"
+        sport:
+            type: string
+            example: "Soccer"
+        league:
+            type: string
+            example: "Serie A"
+        event:
+            type: string
+            example: "AC Milan vs. Inter Milan"
+        selection:
+            type: string
+            example: "1"
+        market:
+            type: string
+            example: "1x2"
+        eventPart:
+            type: string
+            example: "Whole Match"
+        betType:
+            type: string
+            example: "Single"
+        isPrematch:
+            type: string
+            example: "Pre-Match"
+        currency:
+            type: string
+            example: "USD"
+        stake:
+            type: number
+            example: 123.34
+        bonus: 
+            type: number
+            example: 0.00
+        oddsType: 
+            type: string
+            example: "Decimal, US"
+        odds:
+            type: number
+            example: 1.34
+        oddsAdjusted:
+            type: boolean
+            example: true   
+        potentialWin:
+            type: number
+            example: 100.23
+        risk:
+            type: number
+            example: 100.23
+        payout:
+            type: number
+            example: 100.23
+        balance: 
+            type: number
+            example: 100000.45
+        status: 
+            type: string
+            example: "Won"
+        startTime:
+            type: string
+            example: "1671511820"
+        settleTime:
+            type: string
+            example: "1671511820"
+        userLocation:
+            type: string
+            example: "Chicago, IL"
+    BetPlacementRequestSimple:
+      type: object
+      properties:
+        betId:
+          type: string
+          example: "abcde-abcde"
+        prebetId: 
+            type: string
+            example: "1234-abc-def"
+        userId: 
+            type: string
+            example: "1234-abc-def"  
+        isPrematch:
+            type: string
+            example: "Pre-Match"
+        currency:
+            type: string
+            example: "USD"
+        stake:
+            type: number
+            example: 123.34
+        bonus: 
+            type: number
+            example: 0.00
+        oddsType: 
+            type: string
+            example: "Decimal, US"
+        odds:
+            type: number
+            example: 1.34
+        oddsAdjusted:
+            type: boolean
+            example: true   
+        potentialWin:
+            type: number
+            example: 100.23
+        risk:
+            type: number
+            example: 100.23
+        balance: 
+            type: number
+            example: 100000.45
+        betTime:
+            type: string
+            example: "1671511820"
+        userLocation:
+            type: string
+            example: "Chicago, IL"      
+        betLines:
+            type: array
+            items:
+              $ref: '#/components/schemas/PlacementBetLineRequestSimple'
+    PlacementBetLineRequestSimple:
+      type: object
+      properties:
+        legId: 
+            type: integer
+            format: int64
+            example: 1
+        betTime: 
+            type: string
+            example: "1234567898"
+        sport:
+            type: string
+            example: "Soccer"
+        league:
+            type: string
+            example: "Serie A"
+        event:
+            type: string
+            example: "AC Milan vs. Inter Milan"
+        selection:
+            type: string
+            example: "1"
+        market:
+            type: string
+            example: "1x2"
+        eventPart:
+            type: string
+            example: "Whole Match"
+        betType:
+            type: string
+            example: "Single"
+        isPrematch:
+            type: string
+            example: "Pre-Match"
+        currency:
+            type: string
+            example: "USD"
+        stake:
+            type: number
+            example: 123.34
+        bonus: 
+            type: number
+            example: 0.00
+        oddsType: 
+            type: string
+            example: "Decimal, US"
+        odds:
+            type: number
+            example: 1.34
+        oddsAdjusted:
+            type: boolean
+            example: true   
+        potentialWin:
+            type: number
+            example: 100.23
+        risk:
+            type: number
+            example: 100.23
+        startTime:
+            type: string
+            example: "1671511820"
+    Acknowledgement:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "Accepted|Rejected"
+        requestTime:
+          type: string
+          example: "2023-01-01 00:00:00"
+        requestId:
+          type: string
+          example: "12345567"
+  requestBodies:
+    OddsAdjustment:
+      description: Odds Adjustment Body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AdjustmentRequestSimple'
+  securitySchemes:
+    adr_auth:
+      type: apiKey
+      name: api_session_key
+      in: header
+  responses:
+    InvalidApiRequest:
+      description: Invalid Request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Missing Authorization Token"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Expired token. Use the refresh token to get a new one"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "You are no longer an active user here"
